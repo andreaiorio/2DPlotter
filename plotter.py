@@ -9,7 +9,18 @@ def LockInX_ds(ds):
     s1_len = ds.loc[ds['SWL'] == 3].index[1]
     x = ds['s1'].values[:s1_len]
     y = ds['s2'].values[::s1_len]
-    z = np.reshape(ds['HP334xx [V]'].values, (len(x), len(y)))
+
+    """ Check if back and forth """
+    if len(np.unique(x)) == s1_len:
+        z = np.reshape(ds['HP334xx [V]'].values, (len(y), len(x)))
+
+    else :
+        x_len = len(x)//2
+        x = x[:x_len]
+        
+        z = np.array([ds['HP334xx [V]'].values[x_len*n:x_len*(n+1)] for n in range(len(ds)//x_len) if n % 2 == 0])
+        z_back = np.array([ds['HP334xx [V]'].values[x_len*n:x_len*(n+1)] for n in range(len(ds)//x_len) if n % 2 != 0])
+
     return x,y,z
 
 def plot_2d(z, x, y):
@@ -28,11 +39,11 @@ def plot_2d(z, x, y):
     main_ax.set(xlabel='s1', ylabel='s2')
 
     """ Plot values """
-    cax = main_ax.imshow(z, origin='lower', cmap='RdBu', aspect='equal')
+    cax = main_ax.imshow(z, origin='lower', cmap='RdBu', aspect='auto')
     v_line = main_ax.axvline(np.nan, color='C0')
     h_line = main_ax.axhline(np.nan, color='C1')
-    v_prof, = right_ax.plot(np.zeros(x.shape[0]),np.arange(x.shape[0]), 'C0')
-    h_prof, = top_ax.plot(np.arange(y.shape[0]),np.zeros(y.shape[0]), 'C1')
+    v_prof, = right_ax.plot(z[:,0],np.arange(len(y)), 'C0')
+    h_prof, = top_ax.plot(np.arange(len(x)), z[0,:], 'C1')
 
     """ Update on mouse move """
     def on_move(event):
@@ -54,7 +65,7 @@ def plot_2d(z, x, y):
 
     """ Update cmap range """
     def update_vlim(val):
-        cax = main_ax.imshow(z, origin='lower', cmap='RdBu', aspect='equal', vmin=val[0], vmax=val[1])
+        cax.set_clim(val[0], val[1])
 
     vmin, vmax = np.min(z), np.max(z), 
     slider = RangeSlider(bottom_ax, "Z-value", vmin, vmax, valinit=(vmin, vmax))
