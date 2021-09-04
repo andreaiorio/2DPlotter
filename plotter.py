@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import argparse
+import glob
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.widgets import RangeSlider, CheckButtons
 
@@ -71,19 +72,32 @@ def plot_2d(z, x, y):
     slider = RangeSlider(bottom_ax, "Z-value", vmin, vmax, valinit=(vmin, vmax))
     slider.on_changed(update_vlim)
 
-    """ Show plot """
-    plt.show()
+    """ Return slider otherwise not working with multiple figures """
+    return slider #
 
-def main(file):
+def main_file(file):
     ds = pd.read_csv(file, sep='\t')
     x,y,z = LockInX_ds(ds)
-    plot_2d(z,x,y)
+    plot = plot_2d(z,x,y)
+    plt.show()
+
+def main_directory(directory):
+    plots = []
+    for file in  glob.glob(directory+'*.dat'):
+        ds = pd.read_csv(file, sep='\t')
+        x,y,z = LockInX_ds(ds)
+        plot.append(plot_2d(z,x,y)) #need to be appened to list in order to have each slider working
+    plt.show()
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description="2D plotter on-the-fly")
     parser.add_argument('-f','--file', help="File")
+    parser.add_argument('-d','--directory', help="Directory")
     args = parser.parse_args()
 
     if args.file is not None:
-        main(args.file)
+        main_file(args.file)
+
+    if args.directory is not None:
+        main_directory(args.directory)
